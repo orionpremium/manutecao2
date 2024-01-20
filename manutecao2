@@ -1,41 +1,54 @@
 #!/bin/bash
 
-# Diretório para o backup
-backup_dir=$(pwd)
+# Cores para mensagens
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
 # Função para registrar mensagens de log
 log() {
-  echo "[ $(date '+%Y-%m-%d %H:%M:%S') ] $1"
+  echo -e "[ $(date '+%Y-%m-%d %H:%M:%S') ] $1"
 }
+
+# Mensagem de início
+echo -e "${YELLOW}Iniciando o script.${NC}"
 
 # Verifica se o script está sendo executado como root
 if [ "$EUID" -ne 0 ]; then
-  log "Este script precisa ser executado como root. Use sudo."
+  log "${RED}Este script precisa ser executado como root. Use sudo.${NC}"
   exit 1
 fi
 
 # Verifica a existência do comando iptables
 if ! command -v iptables &> /dev/null; then
-  log "O comando iptables não foi encontrado. Certifique-se de que está instalado."
+  log "${RED}O comando iptables não foi encontrado. Certifique-se de que está instalado.${NC}"
   exit 1
 fi
 
 # Backup do sshd_config
-cp /etc/ssh/sshd_config "$backup_dir/sshd_config_backup_$(date '+%Y%m%d_%H%M%S')" && log "Backup do sshd_config criado em $backup_dir."
+log "${GREEN}Criando backup do sshd_config.${NC}"
+cp /etc/ssh/sshd_config "sshd_config_backup_$(date '+%Y%m%d_%H%M%S')" && log "${GREEN}Backup do sshd_config criado.${NC}"
 
 # Dá permissões de root ao usuário root
-usermod -aG sudo root && log "Permissões de root concedidas."
+log "${GREEN}Concedendo permissões de root.${NC}"
+usermod -aG sudo root && log "${GREEN}Permissões de root concedidas.${NC}"
 
 # Atualiza o sshd_config para permitir login como root via SSH
-sed -i '/PermitRootLogin/ s/.*/PermitRootLogin yes/g' /etc/ssh/sshd_config && log "PermitRootLogin habilitado."
+log "${GREEN}Habilitando PermitRootLogin no sshd_config.${NC}"
+sed -i '/PermitRootLogin/ s/.*/PermitRootLogin yes/g' /etc/ssh/sshd_config && log "${GREEN}PermitRootLogin habilitado.${NC}"
 
 # Reinicia o serviço SSH
-service ssh restart && log "Serviço SSH reiniciado."
+log "${GREEN}Reiniciando o serviço SSH.${NC}"
+service ssh restart && log "${GREEN}Serviço SSH reiniciado.${NC}"
 
 # Limpa as regras do iptables
-iptables -F && log "Regras do iptables limpas."
+log "${GREEN}Limpando as regras do iptables.${NC}"
+iptables -F && log "${GREEN}Regras do iptables limpas.${NC}"
 
 # Adiciona o comando ao cron job para executar após um reboot
-(crontab -l ; echo "@reboot /sbin/iptables -F") | crontab - && log "Comando adicionado ao cron job para execução após reboot."
+log "${GREEN}Adicionando o comando ao cron job.${NC}"
+(crontab -l ; echo "@reboot /sbin/iptables -F") | crontab - && log "${GREEN}Comando adicionado ao cron job para execução após reboot.${NC}"
 
-log "Script executado com sucesso."
+# Mensagem de conclusão
+echo -e "${YELLOW}Script executado com sucesso.${NC}"
