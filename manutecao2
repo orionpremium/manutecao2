@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Diretório para o backup
+backup_dir=$(pwd)
+
+# Função para registrar mensagens de log
+log() {
+  echo "[ $(date '+%Y-%m-%d %H:%M:%S') ] $1"
+}
+
+# Verifica se o script está sendo executado como root
+if [ "$EUID" -ne 0 ]; then
+  log "Este script precisa ser executado como root. Use sudo."
+  exit 1
+fi
+
+# Verifica a existência do comando iptables
+if ! command -v iptables &> /dev/null; then
+  log "O comando iptables não foi encontrado. Certifique-se de que está instalado."
+  exit 1
+fi
+
+# Backup do sshd_config
+cp /etc/ssh/sshd_config "$backup_dir/sshd_config_backup_$(date '+%Y%m%d_%H%M%S')" && log "Backup do sshd_config criado em $backup_dir."
+
+# Dá permissões de root ao usuário root
+usermod -aG sudo root && log "Permissões de root concedidas."
+
+# Atualiza o sshd_config para permitir login como root via SSH
+sed -i '/PermitRootLogin/ s/.*/PermitRootLogin yes/g' /etc/ssh/sshd_config && log "PermitRootLogin habilitado."
+
+# Reinicia o serviço SSH
+service ssh restart && log "Serviço SSH reiniciado."
+
+# Limpa as regras do iptables
+iptables -F && log "Regras do iptables limpas."
+
+# Adiciona o comando ao cron job para executar após um reboot
+(crontab -l ; echo "@reboot /sbin/iptables -F") | crontab - && log "Comando adicionado ao cron job para execução após reboot."
+
+log "Script executado com sucesso."
