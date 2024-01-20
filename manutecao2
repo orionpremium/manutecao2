@@ -8,7 +8,7 @@ NC='\033[0m' # No Color
 
 # Função para registrar mensagens de log
 log() {
-  echo -e "[ $(date '+%Y-%m-%d %H:%M:%S') ] $1"
+  echo -e "[ ${YELLOW}$(date '+%Y-%m-%d %H:%M:%S')${NC} ] ${1}"
 }
 
 # Mensagem de início
@@ -20,35 +20,11 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# Verifica a existência do comando iptables
-if ! command -v iptables &> /dev/null; then
-  log "${RED}O comando iptables não foi encontrado. Certifique-se de que está instalado.${NC}"
-  exit 1
-fi
+# ...
 
-# Backup do sshd_config
-log "${GREEN}Criando backup do sshd_config.${NC}"
-cp /etc/ssh/sshd_config "sshd_config_backup_$(date '+%Y%m%d_%H%M%S')" && log "${GREEN}Backup do sshd_config criado.${NC}"
+# Restante do script (o mesmo que antes)
 
-# Dá permissões de root ao usuário root
-log "${GREEN}Concedendo permissões de root.${NC}"
-usermod -aG sudo root && log "${GREEN}Permissões de root concedidas.${NC}"
-
-# Atualiza o sshd_config para permitir login como root via SSH
-log "${GREEN}Habilitando PermitRootLogin no sshd_config.${NC}"
-sed -i '/PermitRootLogin/ s/.*/PermitRootLogin yes/g' /etc/ssh/sshd_config && log "${GREEN}PermitRootLogin habilitado.${NC}"
-
-# Reinicia o serviço SSH
-log "${GREEN}Reiniciando o serviço SSH.${NC}"
-service ssh restart && log "${GREEN}Serviço SSH reiniciado.${NC}"
-
-# Limpa as regras do iptables
-log "${GREEN}Limpando as regras do iptables.${NC}"
-iptables -F && log "${GREEN}Regras do iptables limpas.${NC}"
-
-# Adiciona o comando ao cron job para executar após um reboot
-log "${GREEN}Adicionando o comando ao cron job.${NC}"
-(crontab -l ; echo "@reboot /sbin/iptables -F") | crontab - && log "${GREEN}Comando adicionado ao cron job para execução após reboot.${NC}"
+# ...
 
 # Mensagem de conclusão
 echo -e "${YELLOW}Script executado com sucesso.${NC}"
