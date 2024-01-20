@@ -27,19 +27,9 @@ loading() {
 # Mensagem de início
 echo -e "${YELLOW}Iniciando o script.${NC}"
 
-# Verifica se o script está sendo executado como root
-if [ "$EUID" -ne 0 ]; then
-  log "${RED}Este script precisa ser executado como root. Use sudo.${NC}"
-  exit 1
-fi
-
-# Simulação de uma barra de carregamento durante o backup
-log "${GREEN}Criando backup do sshd_config.${NC}"
-(cp /etc/ssh/sshd_config "sshd_config_backup_$(date '+%Y%m%d_%H%M%S')") & loading
-
 # ...
 
-# Restante do script (o mesmo que antes)
+# Remova ou ajuste a linha do wget conforme necessário
 
 # ...
 
