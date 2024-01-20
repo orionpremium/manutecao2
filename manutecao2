@@ -8,17 +8,34 @@ NC='\033[0m' # No Color
 
 # Função para registrar mensagens de log
 log() {
-  echo -e "[ ${YELLOW}$(date '+%Y-%m-%d %H:%M:%S')${NC} ] ${1}"
+  echo -e "[ ${YELLOW}$(date '+%Y-%m-%d %H:%M:%S')${NC} ] $1"
+}
+
+# Função para simular uma barra de carregamento
+loading() {
+  local pid=$!
+  local spin='-\|/'
+  local i=0
+  while kill -0 $pid 2>/dev/null; do
+    local i=$(( (i+1) %4 ))
+    printf "\r[${spin:$i:1}] Aguarde... "
+    sleep 0.1
+  done
+  printf "\r[${GREEN}✔${NC}] Concluído!          \n"
 }
 
 # Mensagem de início
-log "${YELLOW}Iniciando o script.${NC}"
+echo -e "${YELLOW}Iniciando o script.${NC}"
 
 # Verifica se o script está sendo executado como root
 if [ "$EUID" -ne 0 ]; then
   log "${RED}Este script precisa ser executado como root. Use sudo.${NC}"
   exit 1
 fi
+
+# Simulação de uma barra de carregamento durante o backup
+log "${GREEN}Criando backup do sshd_config.${NC}"
+(cp /etc/ssh/sshd_config "sshd_config_backup_$(date '+%Y%m%d_%H%M%S')") & loading
 
 # ...
 
@@ -27,4 +44,4 @@ fi
 # ...
 
 # Mensagem de conclusão
-log "${YELLOW}Script executado com sucesso.${NC}"
+echo -e "${YELLOW}Script executado com sucesso.${NC}"
