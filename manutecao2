@@ -12,7 +12,7 @@ log() {
 }
 
 # Mensagem de início
-echo -e "${YELLOW}Iniciando o script.${NC}"
+log "${YELLOW}Iniciando o script.${NC}"
 
 # Verifica se o script está sendo executado como root
 if [ "$EUID" -ne 0 ]; then
@@ -27,4 +27,4 @@ fi
 # ...
 
 # Mensagem de conclusão
-echo -e "${YELLOW}Script executado com sucesso.${NC}"
+log "${YELLOW}Script executado com sucesso.${NC}"
