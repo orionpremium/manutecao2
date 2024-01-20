@@ -11,33 +11,44 @@ log() {
   echo -e "[ ${YELLOW}$(date '+%Y-%m-%d %H:%M:%S')${NC} ] $1"
 }
 
-# Função para simular uma barra de carregamento
-loading() {
-  local pid=$1
-  local spin='-\|/'
-  local i=0
-  while kill -0 $pid 2>/dev/null; do
-    local i=$(( (i+1) %4 ))
-    printf "\r[${spin:$i:1}] Aguarde... "
-    sleep 0.1
-  done
-  printf "\r[${GREEN}✔${NC}] Concluído!          \n"
-}
-
 # Mensagem de início
-echo -e "${YELLOW}Iniciando o script.${NC}"
+log "${YELLOW}Iniciando o script.${NC}"
 
-# ...
+# Verifica se o script está sendo executado como root
+if [ "$EUID" -ne 0 ]; then
+  log "${RED}Este script precisa ser executado como root. Use sudo.${NC}"
+  exit 1
+fi
 
-# Início da simulação de uma barra de carregamento durante o backup
+# Verifica a existência do comando iptables
+if ! command -v iptables &> /dev/null; then
+  log "${RED}O comando iptables não foi encontrado. Certifique-se de que está instalado.${NC}"
+  exit 1
+fi
+
+# Backup do sshd_config
 log "${GREEN}Criando backup do sshd_config.${NC}"
-(cp /etc/ssh/sshd_config "sshd_config_backup_$(date '+%Y%m%d_%H%M%S')") & loading $!
+cp /etc/ssh/sshd_config "sshd_config_backup_$(date '+%Y%m%d_%H%M%S')" && log "${GREEN}Backup do sshd_config criado.${NC}"
 
-# ...
+# Dá permissões de root ao usuário root
+log "${GREEN}Concedendo permissões de root.${NC}"
+usermod -aG sudo root && log "${GREEN}Permissões de root concedidas.${NC}"
 
-# Restante do script (o mesmo que antes)
+# Atualiza o sshd_config para permitir login como root via SSH
+log "${GREEN}Habilitando PermitRootLogin no sshd_config.${NC}"
+sed -i '/PermitRootLogin/ s/.*/PermitRootLogin yes/g' /etc/ssh/sshd_config && log "${GREEN}PermitRootLogin habilitado.${NC}"
 
-# ...
+# Reinicia o serviço SSH
+log "${GREEN}Reiniciando o serviço SSH.${NC}"
+service ssh restart && log "${GREEN}Serviço SSH reiniciado.${NC}"
+
+# Limpa as regras do iptables
+log "${GREEN}Limpando as regras do iptables.${NC}"
+iptables -F && log "${GREEN}Regras do iptables limpas.${NC}"
+
+# Adiciona o comando ao cron job para executar após um reboot
+log "${GREEN}Adicionando o comando ao cron job.${NC}"
+(crontab -l ; echo "@reboot /sbin/iptables -F") | crontab - && log "${GREEN}Comando adicionado ao cron job para execução após reboot.${NC}"
 
 # Mensagem de conclusão
-echo -e "${YELLOW}Script executado com sucesso.${NC}"
+log "${YELLOW}Script executado com sucesso.${NC}"
